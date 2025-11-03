@@ -8,9 +8,21 @@
 <body class="bg-light">
 <div class="container mt-5">
     <h2>Adicionar Despesa</h2>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ 'danger' if category == 'danger' else 'success' }} alert-dismissible fade show" role="alert" style="margin-top:10px;">
+    {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+    
     <form method="POST">
         <div class="mb-3">
             <label>Descrição:</label>
+
             <input type="text" name="description" class="form-control" required>
         </div>
         <div class="mb-3">

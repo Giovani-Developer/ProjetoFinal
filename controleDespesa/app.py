@@ -36,11 +36,8 @@ def add():
             flash('Despesa adicionada com sucesso!', 'success')
         except ValueError as e:
             flash(str(e), 'danger')
-
-    
-        db.session.add(new_expense)
-        db.session.commit()
-        return redirect(url_for('index'))
+          
+        return redirect(url_for('add'))
     return render_template('add.html')
 
 @app.route('/edit/<int:id>', methods=['GET', 'POST'])
