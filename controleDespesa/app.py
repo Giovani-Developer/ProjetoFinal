@@ -19,7 +19,19 @@ with app.app_context():
 def index():
     expenses = Expense.query.order_by(Expense.date.desc()).all()
     total = sum(expense.value for expense in expenses)
-    return render_template('index.html', expenses=expenses, total=total)
+
+    categories = []
+    totals = []
+
+    for expense in expenses:
+        if expense.category not in categories:
+            categories.append(expense.category)
+            totals.append(expense.value)
+        else:
+            i = categories.index(expense.category)
+            totals[i] += expense.value 
+
+    return render_template('index.html', expenses=expenses, total=total, categories=categories, totals=totals)
 
 @app.route('/add', methods=['GET', 'POST'])
 def add():
@@ -58,6 +70,12 @@ def delete(id):
     db.session.delete(expense)
     db.session.commit()
     return redirect(url_for('index'))
+
+@app.route('/filter')
+def filter():
+    category = request.args.get('category')
+    expenses = Expense.query.filter_by(category=category).all()
+    return render_template("index.html", expenses=expenses)
 
 if __name__ == '__main__':
     app.run(debug=True)
