@@ -5,15 +5,121 @@
   <title>Controle de Despesas</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      background: #f4f6f8;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    h1 {
+      font-weight: 700;
+      color: #2c3e50;
+    }
+
+    .table thead th {
+      background-color: #2c3e50 !important;
+      color: #fff !important;
+    }
+
+    .btn-success {
+      background-color: #27ae60;
+      border: none;
+    }
+
+    .btn-success:hover {
+      background-color: #2ecc71;
+    }
+
+    .chart-card {
+      max-width: 500px;
+      margin: 40px auto;
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    #chart {
+      max-width: 400px;
+      height: 400px;
+      margin: 0 auto;
+    }
+
+    /* 🌙 Modo escuro */
+    body.dark-mode {
+      background: #1e1e1e;
+      color: #e0e0e0;
+    }
+
+    body.dark-mode h1 {
+      color: #f5f5f5;
+    }
+
+    body.dark-mode .card,
+    body.dark-mode .chart-card {
+      background: #2c2c2c;
+      color: #f5f5f5;
+      box-shadow: 0 3px 10px rgba(255, 255, 255, 0.05);
+    }
+
+    body.dark-mode .table thead th {
+      background-color: #3a3a3a !important;
+      color: #f5f5f5 !important;
+    }
+
+    body.dark-mode .table tbody tr {
+      color: #ddd;
+    }
+
+    body.dark-mode .btn-success {
+      background-color: #2ecc71;
+    }
+
+    body.dark-mode .btn-warning {
+      background-color: #f39c12;
+      border: none;
+    }
+
+    body.dark-mode .btn-danger {
+      background-color: #e74c3c;
+      border: none;
+    }
+
+    .theme-toggle {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #2c3e50;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 45px;
+      height: 45px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      z-index: 1000;
+    }
+
+    .theme-toggle:hover {
+      background: #34495e;
+    }
+  </style>
 </head>
-<body class="bg-light">
+<body>
   <div class="container mt-5">
+
+    <!-- Botão de modo escuro -->
+    <button id="themeToggle" class="theme-toggle" title="Alternar tema">🌙</button>
 
     <!-- Mensagens flash -->
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         {% for category, message in messages %}
-          <div class="alert alert-{{ 'danger' if category == 'danger' else 'success' }} alert-dismissible fade show" role="alert">
+          <div class="alert alert-{{ 'danger' if category == 'danger' else 'success' }} alert-dismissible fade show shadow-sm" role="alert">
             {{ message }}
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
           </div>
@@ -21,75 +127,107 @@
       {% endif %}
     {% endwith %}
 
-    <h1 class="mb-3 text-center">💰 Controle de Despesas</h1>
+    <h1 class="mb-4 text-center">💰 Controle de Despesas</h1>
 
-    <a href="/add" class="btn btn-success mb-3">+ Adicionar Despesa</a>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <a href="/add" class="btn btn-success">+ Adicionar Despesa</a>
+      <h5 class="text-end mb-0">💵 Total: <strong>R$ {{ '%.2f' | format(total) }}</strong></h5>
+    </div>
 
-    <table class="table table-striped table-hover">
-      <thead class="table-dark">
-        <tr>
-          <th>Descrição</th>
-          <th>Categoria</th>
-          <th>Valor (R$)</th>
-          <th>Data</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for expense in expenses %}
-        <tr>
-          <td>{{ expense.description }}</td>
-          <td>{{ expense.category }}</td>
-          <td>{{ '%.2f' | format(expense.value) }}</td>
-          <td>{{ expense.date.strftime('%d/%m/%Y') }}</td>
-          <td>
-            <a href="{{ url_for('edit', id=expense.id) }}" class="btn btn-warning btn-sm">Editar</a>
-            <a href="{{ url_for('delete', id=expense.id) }}" class="btn btn-danger btn-sm">Excluir</a>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-
-    <h4 class="text-end">💵 Total: R$ {{ '%.2f' | format(total) }}</h4>
+    <!-- Tabela -->
+    <div class="card shadow-sm">
+      <div class="card-body p-0">
+        <table class="table table-striped table-hover mb-0">
+          <thead>
+            <tr>
+              <th>Descrição</th>
+              <th>Categoria</th>
+              <th>Valor (R$)</th>
+              <th>Data</th>
+              <th class="text-center">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for expense in expenses %}
+            <tr>
+              <td>{{ expense.description }}</td>
+              <td>{{ expense.category }}</td>
+              <td>{{ '%.2f' | format(expense.value) }}</td>
+              <td>{{ expense.date.strftime('%d/%m/%Y') }}</td>
+              <td class="text-center">
+                <a href="{{ url_for('edit', id=expense.id) }}" class="btn btn-warning btn-sm">Editar</a>
+                <a href="{{ url_for('delete', id=expense.id) }}" class="btn btn-danger btn-sm">Excluir</a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
 
     <!-- Gráfico -->
-    <div class="card p-4 mt-5 shadow-sm">
-      <h5 class="text-center mb-3">📊 Despesas por Categoria</h5>
+    <div class="chart-card text-center">
+      <h5 class="mb-3">📊 Despesas por Categoria</h5>
       <canvas id="chart"></canvas>
     </div>
 
   </div>
 
- <script>
-  // Variáveis vindas do Flask
-  var categories = JSON.parse('{{ categories|tojson|safe }}');
-  var totals = JSON.parse('{{ totals|tojson|safe }}');
+  <script>
+    // Dados do Flask
+    var categories = JSON.parse('{{ categories|tojson|safe }}');
+    var totals = JSON.parse('{{ totals|tojson|safe }}');
 
-  if (categories && categories.length > 0) {
-    var ctx = document.getElementById('chart').getContext('2d');
-    new Chart(ctx, {
-      type: 'pie',
-      data: {
-        labels: categories,
-        datasets: [{
-          data: totals,
-          backgroundColor: [
-            '#36A2EB', '#FF6384', '#FFCE56',
-            '#4BC0C0', '#9966FF', '#FF9F40',
-            '#A4DE02', '#00C49F'
-          ]
-        }]
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: { position: 'bottom' }
+    var chartInstance;
+
+    function renderChart(darkMode) {
+      const ctx = document.getElementById('chart').getContext('2d');
+      if (chartInstance) chartInstance.destroy();
+
+      chartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: categories,
+          datasets: [{
+            data: totals,
+            backgroundColor: darkMode
+              ? ['#1abc9c', '#9b59b6', '#e67e22', '#3498db', '#e74c3c']
+              : ['#36A2EB', '#FF6384', '#FFCE56', '#4BC0C0', '#9966FF']
+          }]
+        },
+        options: {
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { color: darkMode ? '#f5f5f5' : '#2c3e50' }
+            }
+          }
         }
-      }
+      });
+    }
+
+    // 🌗 Alternância de modo
+    const themeToggle = document.getElementById('themeToggle');
+    const body = document.body;
+
+    // Verifica se já há tema salvo
+    if (localStorage.getItem('theme') === 'dark') {
+      body.classList.add('dark-mode');
+      themeToggle.textContent = '☀️';
+      renderChart(true);
+    } else {
+      renderChart(false);
+    }
+
+    themeToggle.addEventListener('click', () => {
+      body.classList.toggle('dark-mode');
+      const dark = body.classList.contains('dark-mode');
+      themeToggle.textContent = dark ? '☀️' : '🌙';
+      localStorage.setItem('theme', dark ? 'dark' : 'light');
+      renderChart(dark);
     });
-  }
-</script>
+  </script>
 
-
-  <script src="https://cdn.jsdelivr.net/npm/bootst
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
